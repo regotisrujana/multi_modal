@@ -1,0 +1,19 @@
+# Render Blueprint for the Streamlit app.
+services:
+  - type: web
+    name: multimodal-recruitment-analyzer
+    runtime: python
+    plan: free
+    rootDir: app
+    buildCommand: pip install -r requirements.txt
+    startCommand: streamlit run main.py --server.port $PORT --server.address 0.0.0.0 --server.headless true
+    healthCheckPath: /
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.9"
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GROQ_MODEL
+        value: llama-3.3-70b-versatile
+      - key: WHISPER_MODEL
+        value: tiny

@@ -1,0 +1,17 @@
+Jane Doe — Software Engineering Candidate
+
+Education: B.S. Computer Science, State University (2022–2026)
+
+Experience:
+- Software Intern at TechCorp (Summer 2025): Built React dashboards and Python APIs.
+- Freelance Web Developer (2024–present): Portfolio sites for small businesses.
+
+Skills: Python, JavaScript, React, SQL, Git, Docker, machine learning basics.
+
+Projects:
+- Recruitment AI dashboard (Streamlit, Groq)
+- Campus event app (Node.js, MongoDB)
+
+Certifications: AWS Cloud Practitioner (in progress)
+
+Career goal: Full-stack or AI engineer role.
