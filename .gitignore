@@ -3,6 +3,8 @@ venv/
 .venv/
 __pycache__/
 *.pyc
+.cache/
+.bin/
 chroma_data/
 exports/*
 !exports/.gitkeep
@@ -10,5 +12,9 @@ exports/*
 .streamlit/secrets.toml
 *.wav
 *.mp4
+*.m4v
+*.mov
+*.avi
+streamlit*.log
 .idea/
 .vscode/

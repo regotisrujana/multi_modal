@@ -5,7 +5,7 @@ Uses Groq directly with processed extracted context — NOT RAG retrieval.
 
 from __future__ import annotations
 
-from utils.helpers import groq_generate, truncate_text
+from utils.helpers import groq_context_limit, groq_generate, truncate_text
 
 
 def chat_with_context(
@@ -17,8 +17,8 @@ def chat_with_context(
     Answer HR questions using full candidate context passed directly to Groq.
     No retrieval chains or vector search for answers.
     """
-    context_block = truncate_text(candidate_context, 80000)
-    analysis_block = truncate_text(analysis_snapshot, 20000)
+    context_block = truncate_text(candidate_context, groq_context_limit())
+    analysis_block = truncate_text(analysis_snapshot, groq_context_limit(4000))
 
     system = """You are an AI HR Assistant for a recruitment platform.
 Answer questions about the candidate using ONLY the provided context and analysis.

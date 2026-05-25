@@ -5,7 +5,11 @@ Used for storage, metadata, duplicate prevention, and analytics — NOT RAG retr
 
 from __future__ import annotations
 
+import hashlib
 import json
+import math
+import os
+import re
 import uuid
 from pathlib import Path
 from typing import Any, Optional
@@ -18,23 +22,60 @@ from utils.helpers import PROJECT_ROOT, content_hash
 CHROMA_PATH = PROJECT_ROOT / "chroma_data"
 COLLECTION_NAME = "candidates"
 EMBEDDING_MODEL = "all-MiniLM-L6-v2"
+EMBEDDING_BACKEND = os.getenv("EMBEDDING_BACKEND", "hash").strip().lower()
 
 _embedder = None
+_embedder_failed = False
 _client = None
 
 
 def _get_embedder():
-    global _embedder
+    global _embedder, _embedder_failed
+    if EMBEDDING_BACKEND != "sentence-transformer":
+        raise RuntimeError("SentenceTransformer embedder is disabled")
+    if _embedder_failed:
+        raise RuntimeError("SentenceTransformer embedder is unavailable")
     if _embedder is None:
         from sentence_transformers import SentenceTransformer
 
-        _embedder = SentenceTransformer(EMBEDDING_MODEL)
+        try:
+            _embedder = SentenceTransformer(EMBEDDING_MODEL)
+        except Exception as exc:
+            _embedder_failed = True
+            raise RuntimeError(
+                f"Failed to initialize embedding model '{EMBEDDING_MODEL}': {exc}"
+            ) from exc
     return _embedder
 
 
+def _fallback_embed_text(text: str, dimensions: int = 384) -> list[float]:
+    """Deterministic local embedding used when the transformer model is unavailable."""
+    tokens = re.findall(r"\b\w+\b", (text or "").lower())
+    if not tokens:
+        return [0.0] * dimensions
+
+    vector = [0.0] * dimensions
+    for token in tokens:
+        digest = hashlib.sha256(token.encode("utf-8")).digest()
+        index = int.from_bytes(digest[:4], "big") % dimensions
+        sign = 1.0 if digest[4] % 2 == 0 else -1.0
+        weight = 1.0 + (digest[5] / 255.0)
+        vector[index] += sign * weight
+
+    norm = math.sqrt(sum(value * value for value in vector))
+    if norm == 0:
+        return vector
+    return [value / norm for value in vector]
+
+
 def embed_texts(texts: list[str]) -> list[list[float]]:
-    model = _get_embedder()
-    return model.encode(texts, show_progress_bar=False).tolist()
+    global _embedder_failed
+    try:
+        model = _get_embedder()
+        return model.encode(texts, show_progress_bar=False).tolist()
+    except Exception:
+        _embedder_failed = True
+        return [_fallback_embed_text(text) for text in texts]
 
 
 def get_client() -> chromadb.PersistentClient:

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 
-from utils.helpers import groq_generate, parse_json_response, truncate_text
+from utils.helpers import groq_context_limit, groq_generate, parse_json_response, truncate_text
 
 
 def extract_entities(context: str) -> dict:
@@ -18,7 +18,7 @@ Return ONLY valid JSON with keys:
 - technologies: list of strings
 
 Candidate text:
-{truncate_text(context, 50000)}
+{truncate_text(context, groq_context_limit())}
 """
     raw = groq_generate(
         prompt,

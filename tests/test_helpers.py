@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 import unittest
+from unittest.mock import patch
 
 from utils.helpers import (
     detect_file_type,
     parse_json_response,
     get_ffmpeg_executable,
+    get_int_env,
+    groq_context_limit,
     require_extractable_text,
     safe_filename,
 )
@@ -15,6 +18,8 @@ class HelperTests(unittest.TestCase):
     def test_detect_supported_and_legacy_file_types(self):
         self.assertEqual(detect_file_type("resume.PDF"), "resume_pdf")
         self.assertEqual(detect_file_type("portfolio.pptx"), "portfolio_ppt")
+        self.assertEqual(detect_file_type("intro.aac"), "audio")
+        self.assertEqual(detect_file_type("intro.m4v"), "video")
         self.assertEqual(detect_file_type("old_resume.doc"), "unsupported_legacy_word")
         self.assertEqual(
             detect_file_type("old_deck.ppt"),
@@ -35,6 +40,11 @@ class HelperTests(unittest.TestCase):
     def test_ffmpeg_lookup_returns_none_or_existing_path(self):
         ffmpeg = get_ffmpeg_executable()
         self.assertTrue(ffmpeg is None or len(ffmpeg) > 0)
+
+    def test_groq_budget_defaults_are_on_demand_friendly(self):
+        with patch.dict("os.environ", {}, clear=True):
+            self.assertEqual(get_int_env("MISSING_TEST_INT", 768), 768)
+            self.assertEqual(groq_context_limit(), 6000)
 
 
 if __name__ == "__main__":

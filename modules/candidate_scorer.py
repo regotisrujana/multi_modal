@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from utils.helpers import groq_generate, parse_json_response, truncate_text
+from utils.helpers import groq_context_limit, groq_generate, parse_json_response, truncate_text
 
 
 def score_candidate(context: str, communication: dict | None = None) -> dict:
@@ -40,7 +40,7 @@ Return ONLY valid JSON:
 {comm_note}
 
 Profile:
-{truncate_text(context, 60000)}
+{truncate_text(context, groq_context_limit())}
 """
     raw = groq_generate(prompt, system_hint="HR scoring analyst. JSON only.")
     data = parse_json_response(raw)

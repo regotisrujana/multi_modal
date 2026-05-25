@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from utils.helpers import groq_generate, parse_json_response, truncate_text
+from utils.helpers import groq_context_limit, groq_generate, parse_json_response, truncate_text
 
 
 def check_ats(context: str, job_keywords: str = "") -> dict:
@@ -22,7 +22,7 @@ Return ONLY valid JSON:
 }}
 
 Resume/profile:
-{truncate_text(context, 50000)}
+{truncate_text(context, groq_context_limit())}
 """
     raw = groq_generate(prompt, system_hint="ATS optimization expert. JSON only.")
     return parse_json_response(raw)

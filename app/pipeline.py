@@ -70,7 +70,8 @@ def process_file(uploaded_bytes: bytes, filename: str) -> dict[str, Any]:
         elif file_type == "video":
             result = extract_video_text(tmp_path)
         else:
-            raise ValueError(f"Unsupported file type: {filename}")
+            ext_debug = Path(filename).suffix.lower()
+            raise ValueError(f"Unsupported file type: {filename} (detected as: {file_type}, ext: '{ext_debug}')")
         require_extractable_text(result, filename)
         result["file_type"] = file_type
         return result

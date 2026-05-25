@@ -131,40 +131,38 @@ def page_upload():
     uploaded = st.file_uploader(
         "Drag and drop files here",
         accept_multiple_files=True,
-        type=[
-            ext.lstrip(".") for ext in SUPPORTED_EXTENSIONS
-        ],
+        type=[ext.lstrip(".") for ext in SUPPORTED_EXTENSIONS],
     )
 
     if uploaded:
         if not isinstance(uploaded, list):
             uploaded = [uploaded]
-        progress = st.progress(0, text="Processing files...")
-        texts, metas = [], []
-        errors = []
-        for i, uf in enumerate(uploaded):
-            progress.progress(
-                (i + 1) / len(uploaded),
-                text=f"Extracting: {uf.name}...",
-            )
-            try:
-                data = process_file(uf.getvalue(), uf.name)
-                texts.append(data.get("text", ""))
-                metas.append(
-                    {
-                        "text": data.get("text", ""),
-                        "metadata": data.get("metadata", {}),
-                        "file_type": data.get("file_type"),
-                        "filename": uf.name,
-                    }
-                )
-            except Exception as exc:
-                errors.append(f"{uf.name}: {exc}")
+        
+        with st.status("Processing files...", expanded=True) as status:
+            texts, metas = [], []
+            errors = []
+            for i, uf in enumerate(uploaded):
+                status.write(f"Extracting content from: {uf.name}...")
+                try:
+                    data = process_file(uf.getvalue(), uf.name)
+                    texts.append(data.get("text", ""))
+                    metas.append(
+                        {
+                            "text": data.get("text", ""),
+                            "metadata": data.get("metadata", {}),
+                            "file_type": data.get("file_type"),
+                            "filename": uf.name,
+                        }
+                    )
+                except Exception as exc:
+                    errors.append(f"**{uf.name}**: {exc}")
 
-        progress.empty()
-        if errors:
-            for e in errors:
-                st.error(e)
+            if errors:
+                status.update(label="Extraction complete with some errors", state="error", expanded=True)
+                for e in errors:
+                    st.error(e)
+            else:
+                status.update(label=f"Successfully extracted {len(metas)} file(s)", state="complete")
 
         if texts:
             merged = merge_contexts(texts)

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from utils.helpers import groq_generate, parse_json_response, truncate_text
+from utils.helpers import groq_context_limit, groq_generate, parse_json_response, truncate_text
 
 
 def extract_skills(context: str) -> dict:
@@ -21,7 +21,7 @@ Return ONLY valid JSON:
 smart_tags examples: Python, AI/ML, Leadership, ReactJS
 
 Profile:
-{truncate_text(context, 50000)}
+{truncate_text(context, groq_context_limit())}
 """
     raw = groq_generate(prompt, system_hint="HR skill analyst. JSON only.")
     data = parse_json_response(raw)

@@ -69,7 +69,7 @@ source venv/bin/activate
 ### 3. Install dependencies
 
 ```bash
-pip install -r app/requirements.txt
+pip install -r requirements.txt
 ```
 
 > First run downloads **sentence-transformers**, **EasyOCR**, and **Whisper** models (several GB). Allow time and disk space.
@@ -85,8 +85,7 @@ copy app\.env.example .env
 ### 5. Run the app
 
 ```bash
-cd app
-streamlit run main.py
+streamlit run app/main.py
 ```
 
 Open **http://localhost:8501**
@@ -128,7 +127,41 @@ Place samples in `assets/` (optional) and upload via the UI.
 |----------|----------|---------|-------------|
 | `GROQ_API_KEY` | Yes | — | Groq API key |
 | `GROQ_MODEL` | No | `llama-3.3-70b-versatile` | Groq model (see [Groq models](https://console.groq.com/docs/models)) |
-| `WHISPER_MODEL` | No | `base` | Whisper size: tiny, base, small, medium |
+| `GROQ_MAX_TOKENS` | No | `768` | Max response tokens per Groq request. Keep this low on on-demand/free tiers to avoid TPM errors. |
+| `GROQ_CONTEXT_CHARS` | No | `6000` | Max extracted candidate text sent in each Groq prompt. Lower this if uploads still hit TPM limits. |
+| `WHISPER_MODEL` | No | `tiny` | Whisper size: tiny, base, small, medium |
+| `WHISPER_CACHE_DIR` | No | `.cache/whisper` | Writable folder for downloaded Whisper models. Keep it inside the project on locked-down hosts. |
+| `EMBEDDING_BACKEND` | No | `hash` | Duplicate/similarity backend. Use `hash` for local/Streamlit deploys; set `sentence-transformer` only if Hugging Face downloads are allowed. |
+
+## Streamlit Community Cloud deployment
+
+1. Push the repo to GitHub.
+2. In [Streamlit Community Cloud](https://share.streamlit.io/), create a new app.
+3. Select:
+   - **Repository:** your GitHub repo
+   - **Branch:** `main`
+   - **Main file path:** `app/main.py`
+4. In **Advanced settings**, set:
+   - **Python version:** `3.11`
+   - **Secrets:**
+     ```toml
+     GROQ_API_KEY="your_groq_api_key"
+     GROQ_MODEL="llama-3.3-70b-versatile"
+     WHISPER_MODEL="tiny"
+     EMBEDDING_BACKEND="hash"
+     ```
+
+Community Cloud runs the app from the repository root, so this project keeps the
+Streamlit config in the root `.streamlit/config.toml` and supports running
+locally with:
+
+```bash
+streamlit run app/main.py
+```
+
+Free-tier Streamlit deployments may struggle with **Torch, Whisper, and EasyOCR**
+on larger uploads. For demos, prefer **PDF, TXT, and image inputs**, and keep
+`WHISPER_MODEL=tiny`.
 
 ## Render deployment
 

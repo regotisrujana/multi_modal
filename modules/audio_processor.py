@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 import tempfile
+import os
 from pathlib import Path
 
-from utils.helpers import ensure_ffmpeg_available
+from utils.helpers import PROJECT_ROOT, ensure_ffmpeg_available
 
 _whisper_model = None
+
+WHISPER_CACHE_DIR = PROJECT_ROOT / ".cache" / "whisper"
 
 
 def _get_whisper():
@@ -15,17 +18,25 @@ def _get_whisper():
     if _whisper_model is None:
         import whisper
 
-        # base is a balance for student laptops; override via WHISPER_MODEL env
-        import os
-
-        size = os.getenv("WHISPER_MODEL", "base")
-        _whisper_model = whisper.load_model(size)
+        # tiny keeps first-run downloads reasonable; override via WHISPER_MODEL env.
+        size = os.getenv("WHISPER_MODEL", "tiny")
+        cache_dir = Path(os.getenv("WHISPER_CACHE_DIR", str(WHISPER_CACHE_DIR)))
+        if not cache_dir.is_absolute():
+            cache_dir = PROJECT_ROOT / cache_dir
+        cache_dir.mkdir(parents=True, exist_ok=True)
+        _whisper_model = whisper.load_model(size, download_root=str(cache_dir))
     return _whisper_model
 
 
 def extract_audio_text(file_path: str | Path) -> dict:
     """Transcribe voice introductions and interview recordings."""
-    ensure_ffmpeg_available()
+    ffmpeg = ensure_ffmpeg_available()
+    if not ffmpeg:
+        raise RuntimeError(
+            "FFmpeg not found. Audio transcription requires FFmpeg. "
+            "Please install it or ensure imageio-ffmpeg is working."
+        )
+
     path = Path(file_path)
     if not path.exists():
         raise FileNotFoundError(f"Audio not found: {path}")
@@ -38,10 +49,15 @@ def extract_audio_text(file_path: str | Path) -> dict:
 
     try:
         model = _get_whisper()
-        result = model.transcribe(str(path), fp16=False)
+        # Use fp16=False for stability across various hardware
+        result = model.transcribe(str(path.absolute()), fp16=False)
         full_text = (result.get("text") or "").strip()
         language = result.get("language", "unknown")
     except Exception as exc:
+        # Check for common whisper errors
+        error_msg = str(exc)
+        if "ffmpeg" in error_msg.lower():
+            raise RuntimeError(f"Whisper requires FFmpeg to process {path.suffix} files. Error: {exc}")
         raise RuntimeError(f"Audio transcription failed: {exc}") from exc
 
     return {

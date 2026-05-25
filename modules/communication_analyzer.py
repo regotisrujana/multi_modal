@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from utils.helpers import groq_generate, parse_json_response, truncate_text
+from utils.helpers import groq_context_limit, groq_generate, parse_json_response, truncate_text
 
 
 def analyze_communication(transcript: str, has_audio: bool = True) -> dict:
@@ -30,7 +30,7 @@ Return ONLY valid JSON:
 }}
 
 Transcript:
-{truncate_text(transcript, 30000)}
+{truncate_text(transcript, groq_context_limit(8000))}
 """
     raw = groq_generate(
         prompt,
